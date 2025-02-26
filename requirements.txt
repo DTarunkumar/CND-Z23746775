@@ -9,6 +9,7 @@ google-cloud-storage==2.9.0
 
 google-generativeai==0.8.4
 Pillow
+google-cloud-secret-manager==2.16.2
 
 
 

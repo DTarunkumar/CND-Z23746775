@@ -7,6 +7,7 @@ from io import BytesIO
 from PIL import Image
 import io
 import re
+import google.cloud.secretmanager as secretmanager
 
 
 app = Flask(__name__)
@@ -15,20 +16,18 @@ os.makedirs('files', exist_ok=True)
 # Google Cloud Storage bucket name
 bucket_name = 'cnd-bucket-z23746775'
 
-# Configure Gemini AI
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))  # Ensure this is set in the environment
+def get_gemini_api_key():
+    client = secretmanager.SecretManagerServiceClient()
+    secret_name = f"projects/858704599700/secrets/GEMINI_API_KEY/versions/latest"
+    
+    response = client.access_secret_version(name=secret_name)
+    return response.payload.data.decode("UTF-8")
 
-
-
-# Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
+# Configure Gemini AI with the retrieved API key
+genai.configure(api_key=get_gemini_api_key())
 
 
 def generate_caption_description(image_path):
-    """
-    Uses Google Gemini AI API to generate a caption and description for an image.
-    """
     with open(image_path, "rb") as image_file:
         image_bytes = image_file.read()
 
@@ -80,9 +79,6 @@ def generate_caption_description(image_path):
 
 
 def upload_blob(bucket_name, file, destination_blob_name):
-    """
-    Upload a file to Google Cloud Storage.
-    """
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
@@ -90,9 +86,6 @@ def upload_blob(bucket_name, file, destination_blob_name):
 
 @app.route('/')
 def index():
-    """
-    Render the file upload interface and list uploaded images.
-    """
     index_html = """  
     <html>
     <head>
@@ -126,6 +119,12 @@ def index():
                 border-radius: 5px;
                 box-shadow: 0px 0px 5px gray;
             }
+            button {
+                padding: 10px;
+                background: green;
+                border-radius: 30px;
+                margin-top:20px;
+            }
         </style>
     </head>
     <body>
@@ -152,10 +151,6 @@ def index():
 
 @app.route('/upload', methods=["POST"])
 def upload():
-    """
-    Handle file upload, generate image captions using Gemini AI, 
-    and store the metadata as a JSON file in the cloud storage bucket.
-    """
     file = request.files['form_file']
     filename = file.filename
     local_image_path = os.path.join("./files", filename)
@@ -182,20 +177,21 @@ def upload():
     return redirect("/")
 
 def list_files():
-    """
-    List JPEG and PNG images from the Google Cloud Storage bucket.
-    """
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blobs = bucket.list_blobs()
 
-    return [blob.name for blob in blobs if blob.name.lower().endswith(('.jpeg', '.jpg', '.png'))]
+    # Filter only image files and store their creation time
+    image_files = [(blob.name, blob.time_created) for blob in blobs if blob.name.lower().endswith(('.jpeg', '.jpg', '.png'))]
+
+    # Sort by creation date (oldest first)
+    sorted_files = sorted(image_files, key=lambda x: x[1], reverse=True)
+
+    # Return only file names in sorted order
+    return [file[0] for file in sorted_files]
 
 @app.route('/files/<filename>')
 def get_file(filename):
-    """
-    Retrieve the requested file from Google Cloud Storage.
-    """
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(filename)
