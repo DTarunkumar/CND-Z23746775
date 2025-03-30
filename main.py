@@ -93,12 +93,12 @@ def index():
         <style>
             body {
                 font-family: Arial, sans-serif;
-                background-color: #f4f4f4;
+                background-color: #d4edda;
                 text-align: center;
                 padding: 20px;
             }
             .container {
-                background: white;
+                background: #d4edda;
                 padding: 20px;
                 border-radius: 10px;
                 box-shadow: 0px 0px 10px gray;
@@ -109,7 +109,12 @@ def index():
                 padding: 0;
             }
             li {
-                margin: 10px 0;
+                margin: 20px 0;
+                border: 1px solid #ccc;
+                padding: 10px;
+                border-radius: 10px;
+                background-color: #f9f9f9;
+                box-shadow: 0px 0px 5px gray;
             }
             img {
                 max-width: 300px;
@@ -124,6 +129,16 @@ def index():
                 background: green;
                 border-radius: 30px;
                 margin-top:20px;
+            }
+            .caption-title {
+                font-weight: bold;
+                font-size: 18px;
+                color: #333;
+            }
+            .caption-desc {
+                font-size: 14px;
+                color: #555;
+                margin-top: 5px;
             }
         </style>
     </head>
@@ -141,13 +156,40 @@ def index():
             </form>
             <h3>Uploaded Images</h3>
             <ul>"""
+
+    # Display image + description
     for file in list_files():
-        index_html += f"<li><a href='/files/{file}'><img src='/files/{file}' alt='{file}'/></a></li>"
+        title = "N/A"
+        description = "N/A"
+
+        # Look for corresponding .json caption file
+        base_name = os.path.splitext(file)[0]
+        caption_file = f"{base_name}.json"
+
+        try:
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(caption_file)
+            caption_json = json.loads(blob.download_as_string())
+            title = caption_json.get("title", "N/A")
+            description = caption_json.get("description", "N/A")
+        except Exception as e:
+            print(f"Could not fetch caption for {file}: {e}")
+
+        index_html += f"""
+            <li>
+                <a href='/files/{file}'><img src='/files/{file}' alt='{file}'/></a>
+                <div class='caption-title'>{title}</div>
+                <div class='caption-desc'>{description}</div>
+            </li>
+        """
+
     index_html += """</ul>
         </div>
     </body>
     </html>"""
     return index_html
+
 
 @app.route('/upload', methods=["POST"])
 def upload():
