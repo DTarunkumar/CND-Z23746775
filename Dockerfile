@@ -1,18 +1,22 @@
-# Use an official Python runtime as a parent image
+# Step 1: Base image
 FROM python:3.10-slim
 
-# Set the working directory
+# Step 2: Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Step 3: Install dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Copy the rest of your app
+# Step 4: Install pytest and run tests
+COPY tests/ ./tests/
+RUN pip install pytest && pytest tests/
+
+# Step 5: Copy the rest of your code
 COPY . .
 
-# Set environment variable for Flask to run
+# Step 6: Set environment variable for Flask
 ENV PORT=8080
 
-# Run the application
+# Step 7: Run the application
 CMD ["python", "main.py"]
