@@ -11,6 +11,8 @@ RUN pip install -r requirements.txt
 # ✅ Copy your entire app source code including main.py and tests/
 COPY . .
 
+# ✅ Set PYTHONPATH so `main` is visible
+ENV PYTHONPATH="${PYTHONPATH}:/app"
 # ✅ Install pytest and run tests
 RUN pip install pytest && pytest tests/
 
