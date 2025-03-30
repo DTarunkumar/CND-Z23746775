@@ -20,4 +20,5 @@ RUN pip install pytest && pytest tests/
 ENV PORT=8080
 
 # Start the app
-CMD ["python", "main.py"]
+# Start the Flask app with Gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "--workers=1", "--threads=8", "--timeout=0", "main:app"]
