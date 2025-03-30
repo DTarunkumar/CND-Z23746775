@@ -93,12 +93,12 @@ def index():
         <style>
             body {
                 font-family: Arial, sans-serif;
-                background-color: #d4edda;
+                background-color: #6ac5fe;
                 text-align: center;
                 padding: 20px;
             }
             .container {
-                background: #d4edda;
+                background: #6ac5fe;
                 padding: 20px;
                 border-radius: 10px;
                 box-shadow: 0px 0px 10px gray;
